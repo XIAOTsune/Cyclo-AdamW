@@ -4,15 +4,14 @@ from torch.optim import Optimizer
 
 class CycloAdamW(Optimizer):
     """
-    Cyclo-AdamW (V2): A physics-inspired optimizer based on the Brachistochrone principle.
+    Cyclo-AdamW: A physics-inspired optimizer based on the Brachistochrone principle.
     
     It introduces:
     1. Cycloid Factor: Dynamic step size scaling based on "potential energy" (Loss).
     2. Quantum Threshold (h_DL): Filters out noise updates using a minimum action principle.
-       (V2: Uses Mean Action Density for scale invariance).
     """
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
-                 weight_decay=1e-2, h_dl=1e-8, loss_alpha=0.9, warmup_steps=500, gamma=0.25):
+                 weight_decay=1e-2, h_dl=1e-5, loss_alpha=0.9, warmup_steps=100):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 <= eps:
@@ -25,7 +24,7 @@ class CycloAdamW(Optimizer):
             raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
 
         defaults = dict(lr=lr, betas=betas, eps=eps, weight_decay=weight_decay,
-                        h_dl=h_dl, loss_alpha=loss_alpha, warmup_steps=warmup_steps, gamma=gamma)
+                        h_dl=h_dl, loss_alpha=loss_alpha, warmup_steps=warmup_steps)
         super(CycloAdamW, self).__init__(params, defaults)
         
         self.state['global_step'] = 0
@@ -62,29 +61,20 @@ class CycloAdamW(Optimizer):
         self.state['loss_ema'] = loss_alpha * self.state['loss_ema'] + (1 - loss_alpha) * curr_loss
         
         # --- Calculate Cycloid Factor ---
+        # Phi = sqrt(Loss_EMA / L_0)
+        # Warmup: During warmup, force phi = 1.0 (Standard AdamW behavior)
+        # We also re-calibrate initial_loss at the end of warmup to avoid "shock"
         warmup_steps = self.defaults['warmup_steps']
         
         if global_step <= warmup_steps:
             phi = 1.0
-            # Continuously update initial_loss during warmup
+            # Continuously update initial_loss during warmup to capture the "stable" start point
             if global_step == warmup_steps:
                 self.state['initial_loss'] = self.state['loss_ema']
         else:
-            # Dynamic Calibration: If we found a new "high", reset potential
-            if self.state['loss_ema'] > self.state['initial_loss']:
-                self.state['initial_loss'] = self.state['loss_ema']
-                
             # Avoid division by zero
             denom = self.state['initial_loss'] + 1e-8
-            ratio = max(0, self.state['loss_ema']) / denom
-            
-            # Energy Retention: phi = ratio ^ gamma
-            # Default gamma should be tunable. For now hardcode or use default dict? 
-            # Ideally this is passed in __init__, but let's assume default=0.25 if not present
-            gamma = self.defaults.get('gamma', 0.25)
-            
-            phi = math.pow(ratio, gamma)
-            
+            phi = math.sqrt(max(0, self.state['loss_ema']) / denom)
             # Clamp to prevent explosion
             phi = max(0.1, min(phi, 1.2))
 
@@ -122,41 +112,55 @@ class CycloAdamW(Optimizer):
                 exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1 - beta2)
 
                 # 3. Compute Naive Step Direction (Standard AdamW Step)
-                # Bias Correction
-                bias_correction1 = 1 - beta1 ** state['step']
-                bias_correction2 = 1 - beta2 ** state['step']
-                
-                # denom = sqrt(v / (1-b2^t)) + eps
-                denom = (exp_avg_sq.sqrt() / math.sqrt(bias_correction2)).add_(group['eps'])
-                
-                # step_size = lr * phi * (sqrt(1-b2^t) / (1-b1^t)) ? 
-                # Actually standard AdamW implementation usually groups bias correction into step size:
-                # step_size = lr * math.sqrt(1 - beta2^t) / (1 - beta1^t)
-                # And denom is just sqrt(exp_avg_sq) + eps * ...
-                
-                # Let's match PyTorch AdamW implementation style for denominator
-                # denom = exp_avg_sq.sqrt().add_(group['eps']) 
-                # step_size = group['lr'] * phi * math.sqrt(bias_correction2) / bias_correction1
-                
+                # denom = sqrt(v) + eps
                 denom = exp_avg_sq.sqrt().add_(group['eps'])
-                step_size = group['lr'] * phi * math.sqrt(bias_correction2) / bias_correction1
+                
+                # We want to check the "Action" of this potential update
+                # Action S = | Delta_theta * Grad L |
+                # Delta_theta_naive = - lr * phi * m / denom
+                # But here we stick to the paper/design: Action = | m * g | (simplified proxy)
+                # Or more accurately based on design doc: S = | step * grad |
+                
+                # Let's use the design doc logic:
+                # naive_step = lr * phi * m / denom
+                # action = norm(naive_step * grad)
+                
+                # Optimization: To avoid full tensor allocation for naive_step just for norm,
+                # we can compute action approximation using dot product if feasible, 
+                # but element-wise multiplication sum is safer for "Action" scalar.
+                
+                step_size = group['lr'] * phi
                 
                 # Check Quantum Threshold if not in warmup
                 if global_step > warmup_steps and h_dl > 0:
-                    # V2: Mean Action Density
+                    # Calculate action: A = sum(|step_i * g_i|) or |step . g|?
+                    # Physics: Work = Force * Displacement. Dot product.
+                    # A = | sum( (step_size * m / denom) * g ) |
+                    
+                    # We compute the dot product term: (m * g / denom).sum()
+                    # To be efficient, we can't avoid some computation.
+                    # Let's do a simplified element-wise action check or global?
+                    # The design implies a parameter-wise (or group-wise) scalar action.
+                    # Usually "Action" is a scalar for the particle (parameter tensor).
+                    
+                    # Compute expected step magnitude roughly
+                    # step_tensor = step_size * exp_avg / denom
+                    # work = (step_tensor * grad).abs().sum() 
+                    
+                    # NOTE: Doing this per-parameter-tensor is standard for PyTorch optimizers
+                    
                     numerator = exp_avg
                     scaled_grad = numerator / denom
+                    # Work = step_size * (scaled_grad * grad).sum()
+                    # This is rigorous work.
                     
                     work_density = scaled_grad * grad
-                    mean_action = step_size * work_density.norm(p=1) / p.numel()
+                    action = step_size * work_density.norm(p=1) # L1 norm of work density
                     
-                    if mean_action < h_dl:
+                    if action < h_dl:
                         # Soft Gating / Linear Suppression
-                        suppression = mean_action / (h_dl + 1e-12)
-                        step_size = step_size * suppression.item()
-                        
-
-
+                        suppression = action / (h_dl + 1e-10)
+                        step_size = step_size * suppression
                 
                 # 4. Final Update
                 p.addcdiv_(exp_avg, denom, value=-step_size)

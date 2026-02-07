@@ -38,17 +38,17 @@ $$ \Phi(t) = \sqrt{\frac{\bar{L}_{t}}{L_{initial} + \epsilon}} $$
 ### 2.2 量子阈值 ($h_{DL}$)
 为了模拟量子隧穿效应并过滤热噪声，我们引入最小作用量原则。
 
-$$ \mathcal{A} = \eta \cdot \|\mathbf{m}_t\| \cdot \|\nabla L_t\| $$
+$$ \mathcal{A} = \eta \cdot \|\mathbf{W}_{density}\|_1 $$
+
+其中 $\mathbf{W}_{density} = \frac{\mathbf{m}_t}{\sqrt{\mathbf{v}_t} + \epsilon} \odot \nabla L_t$ 是“功密度”。
 
 - **$h_{DL}$ 定义**：最小有效作用量 (Minimum Effective Action)。
 - **物理意义**：普朗克常数。如果某次更新所做的“功”（步长 $\times$ 力）小于 $h_{DL}$，则该更新被视为“无效涨落”。
 
-**过滤逻辑**：
+**过滤逻辑 (Soft Gating)**：
 如果不满足 $\mathcal{A} > h_{DL}$：
-1. **硬阈值 (Hard Gating)**: 直接跳过 update ($\Delta \theta = 0$)。这会导致稀疏更新，可能加速推理但损害训练。
-2. **软阈值 (Soft Gating - DEFAULT)**:
-   $$ \text{Scale} = \text{sigmoid}(k \cdot (\mathcal{A} - h_{DL})) $$
-   当作用量微小时，极度抑制步长，防止在极小值附近进行无意义的“布朗运动”式游走。
+   $$ \text{Scale} = \frac{\mathcal{A}}{h_{DL} + \epsilon} $$
+   当作用量微小时，线性抑制步长，防止在极小值附近进行无意义的“布朗运动”式游走。
 
 ## 3. 算法伪代码 (Revised)
 

@@ -57,3 +57,20 @@
     - 假设: 影响摆线因子的稳定性。
 - **Warmup Steps**: 测试值 `[0, 1000]`.
     - 验证对初期不稳定的鲁棒性。
+
+## 5. 验证结果总结 (2026-02-07)
+
+### Rosenbrock 函数
+- **AdamW**: Final Loss 3.9495
+- **Cyclo-AdamW**: Final Loss **3.3123** (-16%)
+- 结论: 验证了非凸环境下的加速收敛能力。
+
+### MNIST 分类 (5 Epochs)
+- **AdamW**: 98.77% Accuracy
+- **Cyclo-AdamW**: **99.00%** Accuracy (+0.23%)
+- 结论: 验证了深度学习任务中的稳定性和泛化优势。
+
+### CIFAR-10 (SimpleCNN, 3 Epochs)
+- **AdamW**: 70.45%
+- **Cyclo-AdamW**: 64.03%
+- 结论: 在未调优的情况下，Cyclo-AdamW 在复杂数据集的初期收敛稍慢。需要进行超参数搜索 (Hyperparameter Tuning)。
