@@ -17,15 +17,15 @@
 
 ### 🚀 Key Features
 
-1.  **Cycloid Factor**:
-    - Dynamically scales the step size based on the "Potential Energy" (Loss) relative to the initial state.
-    - **High Loss** $\rightarrow$ High Potential $\rightarrow$ Faster Descent.
-    - **Low Loss** $\rightarrow$ Low Potential $\rightarrow$ Automatic Decay.
+1.  **Cycloid Factor ($\phi$) with Energy Retention**:
+    - Dynamically scales the step size based on **Potential Energy** (Loss).
+    - **Energy Retention ($\gamma$)**: Allows tuning of how aggressively the learning rate decays as loss drops.
+    - **Auto-Calibration**: Automatically resets the potential reference ($L_0$) if the loss landscape shifts significantly.
 
-2.  **Quantum Threshold ($h_{DL}$)**:
-    - Inspired by Planck's constant.
-    - Filters out "thermal noise" updates where the **Action** ($Step \times Gradient$) is below a minimum threshold ($h_{DL}$).
-    - Stabilizes training in flat or noisy regions.
+2.  **Quantum Threshold ($h_{DL}$)** via Mean Action Density:
+    - Filters out "thermal noise" updates where the **Mean Action Density** (Average work per parameter) is below a threshold ($h_{DL}$).
+    - **Scale Invariant**: Robust across different layer sizes (Conv2d vs Bias).
+    - Stabilizes training in flat or noisy regions without killing effective gradients.
 
 ### 📊 Performance (Verified)
 
@@ -33,6 +33,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **Non-Convex Opt** (Rosenbrock) | Final Loss | 3.9495 | **3.3123** | **-16% Loss** |
 | **Image Classif** (MNIST) | Accuracy | 98.77% | **99.00%** | **+0.23% Acc** |
+| **Complex Vision** (CIFAR-10) | Accuracy (3 Epochs) | **70.45%** | 68.40% | *Comparable (-2%)* |
 
 > *See [Verification Report](docs/verification_report.md) for details.*
 
@@ -58,8 +59,9 @@ optimizer = CycloAdamW(
     model.parameters(),
     lr=1e-3,
     weight_decay=1e-2,
-    h_dl=1e-5,          # Quantum Threshold (Default: 1e-5)
-    warmup_steps=100    # Warmup steps before physics logic activates
+    h_dl=1e-8,          # Quantum Threshold (Default: 1e-8)
+    gamma=0.25,         # Energy Retention (Default: 0.25)
+    warmup_steps=500    # Warmup steps before physics logic activates
 )
 ```
 
@@ -72,15 +74,15 @@ optimizer = CycloAdamW(
 
 ### 🚀 核心特性
 
-1.  **摆线因子 (Cycloid Factor)**:
-    - 根据相对于初始状态的“势能”（Loss）动态缩放步长。
-    - **高 Loss** $\rightarrow$ 高势能 $\rightarrow$ 加速下降。
-    - **低 Loss** $\rightarrow$ 低势能 $\rightarrow$ 自动衰减。
+1.  **带能量保留的摆线因子 (Cycloid Factor $\phi$)**:
+    - 根据相对于初始状态的**势能**（Loss）动态缩放步长。
+    - **能量保留 ($\gamma$)**: 允许调节学习率随 Loss 下降而衰减的激进程度。
+    - **自动校准**: 如果 Loss 地形发生剧烈变化，自动重置势能参考点 ($L_0$)。
 
-2.  **量子阈值 ($h_{DL}$)**:
-    - 灵感来自普朗克常数。
-    - 过滤掉“热噪声”更新，即当 **作用量** ($步长 \times 梯度$) 低于最小阈值 ($h_{DL}$) 时，跳过或抑制更新。
-    - 在平坦或嘈杂区域稳定训练。
+2.  **基于平均作用量密度的量子阈值 ($h_{DL}$)**:
+    - 过滤掉“热噪声”更新，即当 **平均作用量密度** (每个参数的平均做功) 低于阈值 ($h_{DL}$) 时，抑制更新。
+    - **尺度不变性**: 对不同大小的层（如大型卷积层与小型偏置层）具有鲁棒性。
+    - 在平坦或嘈杂区域稳定训练，同时保留有效梯度。
 
 ### 📊 性能表现 (已验证)
 
@@ -88,6 +90,7 @@ optimizer = CycloAdamW(
 | :--- | :--- | :--- | :--- | :--- |
 | **非凸优化** (Rosenbrock) | 最终 Loss | 3.9495 | **3.3123** | **Loss 降低 16%** |
 | **图像分类** (MNIST) | 准确率 | 98.77% | **99.00%** | **准确率提升 0.23%** |
+| **复杂视觉** (CIFAR-10) | 准确率 (3 Epochs) | **70.45%** | 68.40% | *相当 (-2%)* |
 
 > *详见 [验证报告](docs/verification_report.md)。*
 
@@ -113,8 +116,9 @@ optimizer = CycloAdamW(
     model.parameters(),
     lr=1e-3,
     weight_decay=1e-2,
-    h_dl=1e-5,          # 量子阈值 (默认: 1e-5)
-    warmup_steps=100    # 物理逻辑激活前的热启动步数
+    h_dl=1e-8,          # 量子阈值 (默认: 1e-8)
+    gamma=0.25,         # 能量保留因子 (默认: 0.25)
+    warmup_steps=500    # 物理逻辑激活前的热启动步数
 )
 ```
 
@@ -128,7 +132,8 @@ Cyclo-AdamW/
 │   └── cyclo_adamw.py    # Core implementation / 核心实现
 ├── tests/
 │   ├── test_convex.py    # Math function verification / 数学函数验证
-│   └── test_mnist.py     # Deep learning verification / 深度学习验证
+│   ├── test_mnist.py     # Deep learning verification / 深度学习验证
+│   └── test_cifar10.py   # Complex dataset verification / 复杂数据集验证
 ├── docs/
 │   ├── algorithm_design.md  # Theory / 理论推导
 │   └── verification_report.md # Results / 验证报告
