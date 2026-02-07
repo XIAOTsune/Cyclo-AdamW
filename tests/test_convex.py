@@ -19,7 +19,7 @@ def test_rosenbrock(optimizer_cls, name="CycloAdamW", steps=2000):
     y = torch.tensor([1.0], requires_grad=True)
     
     if name == "CycloAdamW":
-        optimizer = optimizer_cls([x, y], lr=1e-3, weight_decay=0, h_dl=1e-5, warmup_steps=100)
+        optimizer = optimizer_cls([x, y], lr=1e-3, weight_decay=0, h_dl=1e-8, warmup_steps=100)
     else:
         optimizer = optimizer_cls([x, y], lr=1e-3, weight_decay=0)
         

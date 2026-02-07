@@ -107,7 +107,8 @@ def run_experiment(optimizer_name="CycloAdamW", epochs=5):
     model = Net().to(device)
     
     if optimizer_name == "CycloAdamW":
-        optimizer = CycloAdamW(model.parameters(), lr=1e-3, h_dl=1e-5, warmup_steps=100)
+        # V2: h_dl=1e-8, no gamma
+        optimizer = CycloAdamW(model.parameters(), lr=1e-3, h_dl=1e-8, warmup_steps=100)
     elif optimizer_name == "AdamW":
         optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
     

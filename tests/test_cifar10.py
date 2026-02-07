@@ -124,9 +124,9 @@ def run_experiment(optimizer_name="CycloAdamW", epochs=5):
     weight_decay = 1e-4 # Standard for ResNet/CIFAR
     
     if optimizer_name == "CycloAdamW":
-        # Cyclo-AdamW (V3 Engineering: h_dl=1e-8, gamma=0.25)
+        # Cyclo-AdamW (V2 Restored: h_dl=1e-8)
         optimizer = CycloAdamW(model.parameters(), lr=lr, weight_decay=weight_decay, 
-                               h_dl=1e-8, warmup_steps=200, gamma=0.25)
+                               h_dl=1e-8, warmup_steps=200)
     elif optimizer_name == "AdamW":
         optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     

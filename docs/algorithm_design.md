@@ -1,4 +1,4 @@
-# Cyclo-AdamW 算法设计 (v1.1)
+# Cyclo-AdamW 算法设计 (v2.1)
 
 ## 1. 核心物理原理：深度学习与经典力学的映射
 **Cyclo-AdamW** 并非简单地模拟最速降线，而是将优化过程映射为在一个高维重力势能场中的质点运动。
@@ -8,49 +8,45 @@
 - **深度学习角色**：$L(x)$ (Loss) 直接映射为 $U(x)$ (Height)。
 - **作用机制**：
     - **高势能 ($L \gg 0$)**：系统需要转化为高动能以快速“滑落”陡峭的斜坡。
-    - **低势能 ($L \to 0$)**：系统动能自然衰减，防止过冲，类似于钟摆在最低点的微小震荡。
-- **归一化问题**：由于不同任务 Loss 绝对值差异极大（MSE vs CE），我们引入“相对势能”，以 $L_{norm} = L / L_{0}$ 为准。
+    - **极低势能 ($L \to 0$)**：系统动能自然衰减，防止过冲，类似于钟摆在最低点的微小震荡。
+- **动态校准 (Auto-Calibration)** (V3): 如果训练过程中 Loss 突然升高（如进入新的高地），算法会自动重置 $L_{initial} = L_{current}$，防止势能计算溢出并重新激活下降动能。
 
-### 1.2 动能 ($K$) <--> 学习步长 ($\eta_{eff}$)
-- **能量守恒**：$K + U = E_{total}$。假设初始 $v_0=0$，则 $v = \sqrt{2g(h_0 - h)}$。
-    - 在这种模型下，Loss 越低，速度应该越快吗？**并非如此**。
-    - **阻尼修正**：在优化中，我们不希望粒子真的像无阻尼钟摆一样永远震荡。我们引入**强阻尼**假设：速度并不完全由能量守恒决定，而是受限于当前的“势能储备”。
-- **修正公式**：$v \propto \sqrt{L}$。
-    - 这意味着：当前位置越高（离目标越远），允许的最大探索速度越大。
-    - 这可以防止在平坦区域（高 Loss 但梯度小）陷入停滞，赋予参数“滑行”的能力。
+### 1.2 动能与摆线因子 ($\Phi$)
+传统的动能公式 $v \propto \sqrt{L}$ 在深度学习中表现过于激进。我们引入 **能量保留因子 (Gamma, $\gamma$)** 来调节势能转化为动能的效率。
+
+$$ \Phi(t) = \left( \frac{\bar{L}_{t}}{L_{initial} + \epsilon} \right)^\gamma $$
+
+- **$\gamma$ (Gamma)**: 能量保留系数。
+    - $\gamma = 0.5$ (物理上的自由落体): 衰减极快，适合凸优化。
+    - $\gamma = 0.25$ (默认，工程优化): 保留更多动能，防止在训练中期过早减速 (如 CIFAR-10 任务中观察到的)，从而匹配 AdamW 的收敛速度。
 
 ## 2. 详细更新规则
 
 ### 2.1 摆线因子 (Cycloid Factor)
 我们定义一个自适应因子 $\Phi(t)$ 来调节基础学习率。
 
-$$ \Phi(t) = \sqrt{\frac{\bar{L}_{t}}{L_{initial} + \epsilon}} $$
+- **$\bar{L}_{t}$ (EMA of Loss)**: 使用指数移动平均平滑 batch 间的随机性。
+- **具体作用**：
+    - **前期 ($\Phi \approx 1$)**：保持较高的有效学习率。
+    - **后期 ($\Phi \to 0$)**：随着 Loss 下降，$\Phi$ 自动衰减，提供一种基于任务进度的自然 Schedule。
 
-- **$\bar{L}_{t}$ (EMA of Loss)**: 使用指数移动平均平滑 batch 间的随机性，代表“当前宏观高度”。
-- **$L_{initial}$**: 训练开始时的 Loss，作为参考基准。
-- **$\epsilon$**: 数值稳定项。
+### 2.2 量子阈值 ($h_{DL}$) 与平均作用量密度 (Mean Action Density) (V2)
+为了模拟量子隧穿效应并过滤热噪声，我们引入最小作用量原则。相比 V1 的总作用量，V2 引入了 **平均作用量密度** 以实现尺度不变性 (Scale Invariance)。
 
-**具体作用**：
-- **前期 ($\Phi \approx 1$)**：保持较高的有效学习率，利用高势能快速下降。
-- **后期 ($\Phi \to 0$)**：随着 Loss 下降，$\Phi$ 自动衰减，提供一种基于任务进度的自然 Schedule，无需手动设置 `StepLR` 或 `CosineAnnealing`。
-- **异常处理**：如果 $\Phi > 1$ (Loss 发散)，则强制 Clipping $\Phi \leftarrow 1$，防止不稳定。
+$$ \mathcal{A}_{density} = \frac{1}{N} \sum^{N}_{i=1} |\text{step}_i \cdot \text{grad}_i| $$
 
-### 2.2 量子阈值 ($h_{DL}$)
-为了模拟量子隧穿效应并过滤热噪声，我们引入最小作用量原则。
+其中 $\text{step}_i$ 是未经过滤的建议步长。
 
-$$ \mathcal{A} = \eta \cdot \|\mathbf{W}_{density}\|_1 $$
-
-其中 $\mathbf{W}_{density} = \frac{\mathbf{m}_t}{\sqrt{\mathbf{v}_t} + \epsilon} \odot \nabla L_t$ 是“功密度”。
-
-- **$h_{DL}$ 定义**：最小有效作用量 (Minimum Effective Action)。
-- **物理意义**：普朗克常数。如果某次更新所做的“功”（步长 $\times$ 力）小于 $h_{DL}$，则该更新被视为“无效涨落”。
+- **$h_{DL}$ 定义**：最小有效作用量密度。
+- **物理意义**：普朗克常数。如果某次更新中，每个参数平均所做的“功”小于 $h_{DL}$，则该更新被视为“无效涨落”。
+- **V2 改进**: 使用密度 ($1/N$) 而非总和，使得该机制对于不同大小的层（如 64通道卷积层 vs 偏置向量）都具有相同的物理意义，避免了小参数层被误杀。
 
 **过滤逻辑 (Soft Gating)**：
-如果不满足 $\mathcal{A} > h_{DL}$：
-   $$ \text{Scale} = \frac{\mathcal{A}}{h_{DL} + \epsilon} $$
-   当作用量微小时，线性抑制步长，防止在极小值附近进行无意义的“布朗运动”式游走。
+如果不满足 $\mathcal{A}_{density} > h_{DL}$：
+   $$ \text{Scale} = \frac{\mathcal{A}_{density}}{h_{DL} + \epsilon} $$
+   这将线性抑制微小的噪声更新，稳定训练。
 
-## 3. 算法伪代码 (Revised)
+## 3. 算法伪代码 (Revised V2.1)
 
 ```python
 # 初始化
@@ -61,39 +57,36 @@ For t in 1..T:
     g_t = grad(params_t)
     l_t = loss(params_t)
     
-    # 1. Update Potential (Loss EMA)
+    # 1. Update Potential (Loss EMA) & Auto-Calibration
     loss_ema = alpha * loss_ema + (1 - alpha) * l_t
+    if loss_ema > initial_loss: initial_loss = loss_ema # (V3)
     
-    # 2. Calculate Cycloid Scale
-    phi = sqrt(loss_ema / initial_loss)
-    phi = clamp(phi, 0.1, 1.2) # 防止极端缩放
+    # 2. Calculate Cycloid Scale with Gamma
+    ratio = loss_ema / initial_loss
+    phi = ratio ^ gamma  # (V3: Gamma tuning)
+    phi = clamp(phi, 0.1, 1.2)
     
-    # 3. AdamW Moment Updates
+    # 3. AdamW Moment Updates (With Bias Correction - V2.1 Fix)
     m_t = beta1 * m_{t-1} + (1 - beta1) * g_t
     v_t = beta2 * v_{t-1} + (1 - beta2) * g_t^2
+    m_hat = m_t / (1 - beta1^t)
+    v_hat = v_t / (1 - beta2^t)
     
-    # 4. Action Check (Quantum Threshold)
-    # Estimate effective step size without updates
-    naive_step = lr * phi * m_t / (sqrt(v_t) + epsilon)
-    action = norm(naive_step * g_t) # Dot product approx
+    # 4. Action Check (Quantum Threshold V2)
+    # Estimate effective step size
+    step_size = lr * phi * sqrt(1 - beta2^t) / (1 - beta1^t)
+    work_density = (m_hat / (sqrt(v_hat) + eps)) * g_t
     
-    if action < h_DL:
+    # Mean Action Density (Scale Invariant)
+    mean_action = step_size * mean(|work_density|)
+    
+    if mean_action < h_DL:
         # Noise detected -> Suppress
-        suppression_factor = action / (h_DL + epsilon) # Linear decay
-        final_step = naive_step * suppression_factor
+        suppression_factor = mean_action / (h_DL + epsilon)
+        final_step_size = step_size * suppression_factor
     else:
-        final_step = naive_step
+        final_step_size = step_size
 
     # 5. Apply
-    params_t = params_t - final_step - lr * weight_decay * params_t
+    params_t = params_t - final_step_size * (m_hat / (sqrt(v_hat) + eps)) - lr * wa * params_t
 ```
-
-## 4. 补充讨论
-
-### 4.1 归一化与尺度不变性
-- 不同的 Loss Scale 会显著影响 $\Phi$。
-- **解决方案**: 在第一个 Batch 自动校准 $L_{initial}$。对后续的 Loss 使用相对变化量。
-
-### 4.2 热启动 (Warmup)
-- 在最开始的几步，Loss 可能剧烈波动。
-- **策略**: 前 $N$ 步 (e.g., 1000) 禁用 Cycloid Factor 和 $h_{DL}$，退化为标准 AdamW，让 $L_{initial}$ 和 EMA 稳定下来。
