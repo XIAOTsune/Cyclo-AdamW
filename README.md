@@ -1,23 +1,33 @@
-# Cyclo-AdamW: Physics-Inspired Optimizer for Deep Learning
+# Cyclo-AdamW: Physics-Inspired Optimizer for Deep Learning <br> (基于物理摆线原理的深度学习优化器)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
+
+[English](#english) | [中文](#chinese)
+
+---
+
+<a name="english"></a>
+## 🇬🇧 English Description
 
 **Cyclo-AdamW** is a novel optimization algorithm that bridges **Classical Mechanics** (Brachistochrone problem) and **Deep Learning**. By modeling the loss landscape as a gravitational potential field, it dynamically adjusts the learning rate and filters noise, achieving faster convergence and better generalization.
 
 ![Cycloid Animation](https://upload.wikimedia.org/wikipedia/commons/3/37/Brachistochrone.gif)
 *(Concept: The Cycloid curve is the fastest path under gravity)*
 
-## 🚀 Key Features
+### 🚀 Key Features
 
-1.  **Cycloid Factor (摆线因子)**:
+1.  **Cycloid Factor**:
     - Dynamically scales the step size based on the "Potential Energy" (Loss) relative to the initial state.
     - **High Loss** $\rightarrow$ High Potential $\rightarrow$ Faster Descent.
     - **Low Loss** $\rightarrow$ Low Potential $\rightarrow$ Automatic Decay.
 
-2.  **Quantum Threshold (量子阈值 $h_{DL}$)**:
+2.  **Quantum Threshold ($h_{DL}$)**:
     - Inspired by Planck's constant.
     - Filters out "thermal noise" updates where the **Action** ($Step \times Gradient$) is below a minimum threshold ($h_{DL}$).
     - Stabilizes training in flat or noisy regions.
 
-## 📊 Performance (Verified)
+### 📊 Performance (Verified)
 
 | Task | Metric | AdamW | Cyclo-AdamW | Improvement |
 | :--- | :--- | :--- | :--- | :--- |
@@ -26,17 +36,17 @@
 
 > *See [Verification Report](docs/verification_report.md) for details.*
 
-## 📦 Installation
+### 📦 Installation
 
 Copy the `src/cyclo_adamw.py` file to your project, or clone this repository:
 
 ```bash
-git clone https://github.com/your-username/Cyclo-AdamW.git
+git clone https://github.com/XIAOTsune/Cyclo-AdamW.git
 cd Cyclo-AdamW
 pip install -r requirements.txt
 ```
 
-## 🛠 Usage
+### 🛠 Usage
 
 It functions as a drop-in replacement for `torch.optim.AdamW`.
 
@@ -51,51 +61,96 @@ optimizer = CycloAdamW(
     h_dl=1e-5,          # Quantum Threshold (Default: 1e-5)
     warmup_steps=100    # Warmup steps before physics logic activates
 )
-
-# Training Loop
-def train(model, loader, optimizer):
-    model.train()
-    for data, target in loader:
-        def closure():
-            optimizer.zero_grad()
-            output = model(data)
-            loss = criterion(output, target)
-            loss.backward()
-            return loss
-
-        # Note: CycloAdamW requires a closure for loss re-evaluation if needed,
-        # though current implementation is efficient.
-        optimizer.step(closure)
 ```
 
-## 📂 Project Structure
+---
+
+<a name="chinese"></a>
+## 🇨🇳 中文介绍
+
+**Cyclo-AdamW** 是一个新颖的深度学习优化算法，它将 **经典力学**（最速降线问题）与 **深度学习** 相结合。通过将损失地形建模为重力势能场，它能够动态调整学习率并过滤噪声，从而实现更快的收敛速度和更好的泛化能力。
+
+### 🚀 核心特性
+
+1.  **摆线因子 (Cycloid Factor)**:
+    - 根据相对于初始状态的“势能”（Loss）动态缩放步长。
+    - **高 Loss** $\rightarrow$ 高势能 $\rightarrow$ 加速下降。
+    - **低 Loss** $\rightarrow$ 低势能 $\rightarrow$ 自动衰减。
+
+2.  **量子阈值 ($h_{DL}$)**:
+    - 灵感来自普朗克常数。
+    - 过滤掉“热噪声”更新，即当 **作用量** ($步长 \times 梯度$) 低于最小阈值 ($h_{DL}$) 时，跳过或抑制更新。
+    - 在平坦或嘈杂区域稳定训练。
+
+### 📊 性能表现 (已验证)
+
+| 任务 | 指标 | AdamW | Cyclo-AdamW | 提升 |
+| :--- | :--- | :--- | :--- | :--- |
+| **非凸优化** (Rosenbrock) | 最终 Loss | 3.9495 | **3.3123** | **Loss 降低 16%** |
+| **图像分类** (MNIST) | 准确率 | 98.77% | **99.00%** | **准确率提升 0.23%** |
+
+> *详见 [验证报告](docs/verification_report.md)。*
+
+### 📦 安装
+
+将 `src/cyclo_adamw.py` 文件复制到您的项目中，或克隆此仓库：
+
+```bash
+git clone https://github.com/XIAOTsune/Cyclo-AdamW.git
+cd Cyclo-AdamW
+pip install -r requirements.txt
+```
+
+### 🛠 使用方法
+
+它可以作为 `torch.optim.AdamW` 的直接替代品使用。
+
+```python
+from src.cyclo_adamw import CycloAdamW
+
+# 初始化优化器
+optimizer = CycloAdamW(
+    model.parameters(),
+    lr=1e-3,
+    weight_decay=1e-2,
+    h_dl=1e-5,          # 量子阈值 (默认: 1e-5)
+    warmup_steps=100    # 物理逻辑激活前的热启动步数
+)
+```
+
+---
+
+## 📂 Project Structure / 项目结构
 
 ```
 Cyclo-AdamW/
 ├── src/
-│   └── cyclo_adamw.py    # The core optimizer implementation
+│   └── cyclo_adamw.py    # Core implementation / 核心实现
 ├── tests/
-│   ├── test_convex.py    # Verification on mathematical functions
-│   └── test_mnist.py     # Verification on MNIST dataset
+│   ├── test_convex.py    # Math function verification / 数学函数验证
+│   └── test_mnist.py     # Deep learning verification / 深度学习验证
 ├── docs/
-│   ├── algorithm_design.md  # Mathematical formulation
-│   └── verification_report.md
+│   ├── algorithm_design.md  # Theory / 理论推导
+│   └── verification_report.md # Results / 验证报告
 └── requirements.txt
 ```
 
-## 📝 Citation
+## 📝 Citation / 引用
+
 If you use this optimizer in your research, please cite:
+如果您在研究中使用了此优化器，请引用：
 
 ```bibtex
 @misc{CycloAdamW2026,
-  author = {Your Name},
+  author = {XIAOTsune},
   title = {Cyclo-AdamW: A Physics-Inspired Optimizer},
   year = {2026},
   publisher = {GitHub},
   journal = {GitHub repository},
-  howpublished = {\url{https://github.com/your-username/Cyclo-AdamW}}
+  howpublished = {\url{https://github.com/XIAOTsune/Cyclo-AdamW}}
 }
 ```
 
-## 📄 License
+## 📄 License / 许可
 This project is licensed under the **MIT License**.
+本项目采用 **MIT 许可证**。
