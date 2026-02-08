@@ -163,3 +163,17 @@ If you use this optimizer in your research, please cite:
 ## 📄 License / 许可
 This project is licensed under the **MIT License**.
 本项目采用 **MIT 许可证**。
+
+---
+
+## 💡 Originality Statement / 原创声明
+
+The core concept of bridging **Classical Mechanics (Brachistochrone Curve)** and **Quantum Action Principle** with Deep Learning Optimization was originally conceived by **TSUNE**. Unlike standard mathematical modifications, this algorithm is driven by a unique physical worldview.
+
+**Attribution Request**:
+If you find this physics-driven perspective inspiring or use this code in your work, please credit the original author (**TSUNE**) and the repository.
+
+**Cyclo-AdamW** 算法的核心思想——将**经典力学（最速降线/摆线）**与**量子作用量原理**引入深度学习优化，是由 **TSUNE** 独立构思并原创提出的。这与传统的基于统计学的优化器改进路线截然不同，是基于物理世界观的创新。
+
+**致谢与引用**:
+如果您觉得这种物理驱动的视角通过了启发，或在您的工作中使用了本代码，请务必注明原作者 (**TSUNE**) 及本仓库出处。

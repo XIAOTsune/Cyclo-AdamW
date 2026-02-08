@@ -19,3 +19,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+--------------------------------------------------------------------------------
+ORIGINAL CONCEPTION NOTICE
+
+The conceptual framework of "Cyclo-AdamW" (specifically the mapping of Loss Landscape to Gravitational Potential Field, the application of Brachistochrone Law to Step Size, and the Quantum Action Threshold mechanism) was originally designed by TSUNE.
+
+While this software is released under the permissive MIT License, the author requests that any derivative works, academic papers, or commercial applications that utilize this specific physics-based optimization logic include a clear reference to the original author (TSUNE) contribution.
+--------------------------------------------------------------------------------
