@@ -33,7 +33,9 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **Non-Convex Opt** (Rosenbrock) | Final Loss | 3.9495 | **3.3123** | **-16% Loss** |
 | **Image Classif** (MNIST) | Accuracy | 98.77% | **99.00%** | **+0.23% Acc** |
-| **Complex Vision** (CIFAR-10) | Accuracy (100 Epochs) | **92.71%** | 92.61% | *Comparable (-0.1%)* |
+| **Complex Vision** (CIFAR-10) | Max Accuracy | **92.61%** | 92.45% | -0.16% |
+| | Final Accuracy (Ep 100) | 91.71% | **92.20%** | **+0.49%** |
+| | Avg Accuracy (Ep 50-100) | 91.76% | **92.08%** | **+0.32% (Stable)** |
 
 > *See [Verification Report](docs/verification_report.md) for details.*
 
@@ -90,7 +92,9 @@ optimizer = CycloAdamW(
 | :--- | :--- | :--- | :--- | :--- |
 | **非凸优化** (Rosenbrock) | 最终 Loss | 3.9495 | **3.3123** | **Loss 降低 16%** |
 | **图像分类** (MNIST) | 准确率 | 98.77% | **99.00%** | **准确率提升 0.23%** |
-| **复杂视觉** (CIFAR-10) | 准确率 (3 Epochs) | **70.45%** | 68.40% | *相当 (-2%)* |
+| **复杂视觉** (CIFAR-10) | 最高准确率 (Max) | **92.61%** | 92.45% | -0.16% |
+| | 最终准确率 (Ep 100) | 91.71% | **92.20%** | **+0.49%** |
+| | 平均准确率 (Ep 50-100) | 91.76% | **92.08%** | **+0.32% (更稳定)** |
 
 > *详见 [验证报告](docs/verification_report.md)。*
 
