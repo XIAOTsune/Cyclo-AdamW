@@ -33,7 +33,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **Non-Convex Opt** (Rosenbrock) | Final Loss | 3.9495 | **3.3123** | **-16% Loss** |
 | **Image Classif** (MNIST) | Accuracy | 98.77% | **99.00%** | **+0.23% Acc** |
-| **Complex Vision** (CIFAR-10) | Accuracy (3 Epochs) | **70.45%** | 68.40% | *Comparable (-2%)* |
+| **Complex Vision** (CIFAR-10) | Accuracy (100 Epochs) | **92.71%** | 92.61% | *Comparable (-0.1%)* |
 
 > *See [Verification Report](docs/verification_report.md) for details.*
 
