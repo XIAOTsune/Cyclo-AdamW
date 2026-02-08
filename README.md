@@ -1,6 +1,6 @@
 # Cyclo-AdamW: Physics-Inspired Optimizer for Deep Learning <br> (基于物理摆线原理的深度学习优化器)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
 
 [English](#english) | [中文](#chinese)
@@ -151,7 +151,7 @@ If you use this optimizer in your research, please cite:
 
 ```bibtex
 @misc{CycloAdamW2026,
-  author = {XIAOTsune},
+  author = {FAN XIANGYANG},
   title = {Cyclo-AdamW: A Physics-Inspired Optimizer},
   year = {2026},
   publisher = {GitHub},
@@ -161,19 +161,19 @@ If you use this optimizer in your research, please cite:
 ```
 
 ## 📄 License / 许可
-This project is licensed under the **MIT License**.
-本项目采用 **MIT 许可证**。
+This project is licensed under the **Apache License 2.0**.
+本项目采用 **Apache 2.0 许可证**。
 
 ---
 
 ## 💡 Originality Statement / 原创声明
 
-The core concept of bridging **Classical Mechanics (Brachistochrone Curve)** and **Quantum Action Principle** with Deep Learning Optimization was originally conceived by **TSUNE**. Unlike standard mathematical modifications, this algorithm is driven by a unique physical worldview.
+The core concept of bridging **Classical Mechanics (Brachistochrone Curve)** and **Quantum Action Principle** with Deep Learning Optimization was originally conceived by **FAN XIANGYANG**. Unlike standard mathematical modifications, this algorithm is driven by a unique physical worldview.
 
 **Attribution Request**:
-If you find this physics-driven perspective inspiring or use this code in your work, please credit the original author (**TSUNE**) and the repository.
+If you find this physics-driven perspective inspiring or use this code in your work, please credit the original author (**FAN XIANGYANG**) and the repository.
 
-**Cyclo-AdamW** 算法的核心思想——将**经典力学（最速降线/摆线）**与**量子作用量原理**引入深度学习优化，是由 **TSUNE** 独立构思并原创提出的。这与传统的基于统计学的优化器改进路线截然不同，是基于物理世界观的创新。
+**Cyclo-AdamW** 算法的核心思想——将**经典力学（最速降线/摆线）**与**量子作用量原理**引入深度学习优化，是由 **FAN XIANGYANG** 独立构思并原创提出的。这与传统的基于统计学的优化器改进路线截然不同，是基于物理世界观的创新。
 
 **致谢与引用**:
-如果您觉得这种物理驱动的视角通过了启发，或在您的工作中使用了本代码，请务必注明原作者 (**TSUNE**) 及本仓库出处。
+如果您觉得这种物理驱动的视角通过了启发，或在您的工作中使用了本代码，请务必注明原作者 (**FAN XIANGYANG**) 及本仓库出处。
